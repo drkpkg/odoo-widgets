@@ -148,7 +148,7 @@ class LocationMapWidget extends Component {
                     lng: position.coords.longitude,
                 };
                 this.state.map.setView(location, 13);
-                this.addMarker(location);
+                this.updateLocation(location);
             });
         }
     }
