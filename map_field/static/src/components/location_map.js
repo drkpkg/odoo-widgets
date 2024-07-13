@@ -43,6 +43,7 @@ class LocationMapWidget extends Component {
             );
             this.state.readonly = this.props.readonly ? true : false;
             this.initMap();
+            this.getCurrentLocation();
         });
 
         onWillStart(() =>
@@ -133,6 +134,23 @@ class LocationMapWidget extends Component {
             this.state.map
         ).on("dragend", (e) => this.updateLocation(e.target.getLatLng()));
         this.state.markers.push(marker);
+    }
+
+    /**
+     * Gets the current location of the user.
+     * @returns {null}
+     */
+    getCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const location = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                this.state.map.setView(location, 13);
+                this.addMarker(location);
+            });
+        }
     }
 }
 
