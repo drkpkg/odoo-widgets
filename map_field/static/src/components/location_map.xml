@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates>
+    <t t-name="map_field.LocationMap">
+        <div class="o_map_field" style="height: 300px;"></div>
+    </t>
+</templates>

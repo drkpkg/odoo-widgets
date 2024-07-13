@@ -1,0 +1,16 @@
+<odoo>
+  <data>
+    <record id="hr_employee_map_view_form" model="ir.ui.view">
+      <field name="name">hr.employee.map.form</field>
+      <field name="model">hr.employee</field>
+      <field name="inherit_id" ref="hr.view_employee_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//page[@name='personal_information']/group/group[1]" position="after">
+          <group>
+            <field name="map_location" widget="location_map" readonly="0"/>
+          </group>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>

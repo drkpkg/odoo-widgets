@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_google_maps_field_connector_google_maps_field_connector,google_maps_field_connector.google_maps_field_connector,model_google_maps_field_connector_google_maps_field_connector,base.group_user,1,1,1,1
