@@ -136,6 +136,12 @@ class LocationMapWidget extends Component {
         this.state.markers.push(marker);
     }
 
+    updateMarker() {
+        const marker = this.state.markers[0];
+        const location = this.state.location;
+        marker.setLatLng([location.lat, location.lng]);
+    }
+
     /**
      * Gets the current location of the user.
      * @returns {null}
