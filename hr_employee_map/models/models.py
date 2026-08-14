@@ -1,13 +1,4 @@
-# -*- coding: utf-8 -*-
-
-from odoo import models
-from odoo.addons.map_field.models.map import Map
-
-
-class HrEmployeeMap(models.Model):
-    """
-    Employee map location
-    """
-    _inherit = 'hr.employee'
-
-    map_location = Map(string="Location", help="Employee location on the map", store=True, default="0.0,0.0")
+# Part of odoo-widgets. See LICENSE file for full copyright and licensing details.
+#
+# The employee extension moved to `hr_employee.py`, named after the model it
+# extends. This file is no longer imported and can be deleted.

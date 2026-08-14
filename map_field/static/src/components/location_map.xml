@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<templates>
+<templates xml:space="preserve">
+
     <t t-name="map_field.LocationMap">
-        <div class="o_map_field" style="height: 300px;"></div>
+        <div class="o_map_field">
+            <div t-if="state.error" class="alert alert-warning mb-0" role="alert">
+                <t t-out="state.error"/>
+            </div>
+            <div t-else="" class="o_map_field_canvas" t-ref="map"
+                 t-attf-style="height: {{ height }}px;"/>
+            <button t-if="geolocationAvailable and !state.error"
+                    type="button"
+                    class="btn btn-link btn-sm o_map_field_locate ps-0"
+                    t-att-disabled="state.geolocating"
+                    t-on-click="() => this.useCurrentLocation()">
+                <i class="fa fa-crosshairs me-1" role="img" aria-hidden="true"/>
+                <t t-if="state.geolocating">Locating…</t>
+                <t t-else="">Use my current location</t>
+            </button>
+        </div>
     </t>
+
 </templates>
