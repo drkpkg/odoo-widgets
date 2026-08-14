@@ -2,10 +2,37 @@
 
 Custom widgets and field types for Odoo **19.0**.
 
-| Module | What it does |
-|--------|--------------|
-| `map_field` | A `point` field type (PostgreSQL `point` column) plus a `location_map` OWL widget that renders it as an interactive Leaflet map. |
-| `hr_employee_map` | Uses it: adds `map_location` to `hr.employee`, shown in the "Personal" tab. |
+Modules are grouped by domain through their **name prefix**, not through
+directories: Odoo's `addons_path` is flat, so a `geo/map_field/` layout would
+need one `addons_path` entry per domain on every developer machine, CI runner
+and deployment. The prefix carries the same information for free, and the
+dependency direction is enforced by `depends`.
+
+| Module | Domain | What it does |
+|--------|--------|--------------|
+| `map_field` | map | A `point` field type (PostgreSQL `point`) plus a `location_map` OWL widget that renders it as an interactive Leaflet map. |
+| `map_geo` | map | A `geo_point` field type on PostGIS `geometry(Point,4326)`: spatially indexable and queryable. Requires the PostGIS extension. |
+| `map_geo_test` | map | Test fixtures for `map_geo`. Not for production databases. |
+| `hr_employee_map` | hr | Bridge: adds `map_location` to `hr.employee`, shown in the "Personal" tab. |
+
+## Which location type do I want?
+
+| | `map_field` (`point`) | `map_geo` (`geo_point`) |
+|---|---|---|
+| Column | PostgreSQL `point` | PostGIS `geometry(Point,4326)` |
+| Extension needed | none | PostGIS |
+| Show it on a form | yes | yes |
+| Sort / group by it | no | no (meaningless either way) |
+| Bounding box, proximity, containment | **no** | **yes**, via a GiST index |
+
+Both exchange values as `"(latitude,longitude)"`, so they read alike in Python
+and in the client. Use `map_field` when the location is only ever displayed;
+use `map_geo` the moment you need to ask a spatial question.
+
+> **Axis order.** PostGIS stores `POINT(longitude latitude)` — the reverse of
+> this repository's `(lat, lng)` convention. The swap is confined to
+> `map_geo.fields.to_ewkt` / `from_ewkt` and nowhere else. Do not invert
+> coordinates anywhere outside those two functions.
 
 ## Usage
 
@@ -65,13 +92,19 @@ Every test cites the spec case it covers with a `# spec: MOD-XXX-NN` comment.
 ### Running the tests
 
 ```bash
-# Python tests (32 tests)
+# Python tests
 odoo-bin -d <db> -u map_field,hr_employee_map --test-enable \
     --test-tags=/map_field,/hr_employee_map --stop-after-init
 
 # OWL/Hoot tests (needs a Chrome or Chromium binary on PATH)
 odoo-bin -d <db> -u map_field --test-enable \
     --test-tags=/map_field:TestLocationMapJs --stop-after-init
+
+# map_geo needs a PostGIS database. The repository's compose.yml ships one
+# under the `geo` profile, on port 6001, kept separate from the main instance:
+#   docker compose --profile geo up -d postgis
+odoo-bin -d <db> --db_port=6001 -u map_geo,map_geo_test --test-enable \
+    --test-tags=/map_geo,/map_geo_test --stop-after-init
 ```
 
 The Hoot suite is also browsable at `/web/tests?filter=map_field`.

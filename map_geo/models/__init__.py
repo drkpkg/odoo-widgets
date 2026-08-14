@@ -1,0 +1,4 @@
+# Part of odoo-widgets. See LICENSE file for full copyright and licensing details.
+
+from . import geo_mixin
+from . import ir_model_fields
