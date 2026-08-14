@@ -31,6 +31,10 @@ class MapGeoMixin(models.AbstractModel):
 
     def init(self):
         super().init()
+        # `Registry.init_models` calls init() on every model, abstract ones
+        # included, and those have no table to index.
+        if self._abstract or not self._auto:
+            return
         for field in self._fields.values():
             if field.type != "geo_point" or not field.store or not field.column_type:
                 continue

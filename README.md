@@ -13,6 +13,8 @@ dependency direction is enforced by `depends`.
 | `map_field` | map | A `point` field type (PostgreSQL `point`) plus a `location_map` OWL widget that renders it as an interactive Leaflet map. |
 | `map_geo` | map | A `geo_point` field type on PostGIS `geometry(Point,4326)`: spatially indexable and queryable. Requires the PostGIS extension. |
 | `map_geo_test` | map | Test fixtures for `map_geo`. Not for production databases. |
+| `map_tracking` | map | Position history for anything that moves: a trackable mixin, an append-only `map.track.point` table, a device registry, and a retention cron. No UI. |
+| `map_tracking_test` | map | Test fixtures for `map_tracking`. Not for production databases. |
 | `hr_employee_map` | hr | Bridge: adds `map_location` to `hr.employee`, shown in the "Personal" tab. |
 
 ## Which location type do I want?
@@ -80,12 +82,51 @@ projects:
 
 The `location_map` widget works with any of the three; only the storage differs.
 
+## Tracking something
+
+```python
+class Vehicle(models.Model):
+    _name = "fleet.vehicle"
+    _inherit = ["fleet.vehicle", "map.tracked.mixin"]
+```
+
+That gives the model `current_location`, `last_fix_at` and `track_point_ids`,
+plus a GiST index on the current position. Feed it fixes through the single
+ingestion entry point:
+
+```python
+record._ingest_track_points([
+    {"location": "(-16.5,-68.15)", "recorded_at": fix_time, "speed_kph": 42},
+])
+```
+
+Positions are **never** written to the business record per ping: they land in
+`map.track.point`, and `current_location` is denormalised once per ingested
+batch. Re-sending a batch is a no-op — devices retry, and `(res_model, res_id,
+recorded_at)` is unique.
+
+| System parameter | Default | Effect |
+|------------------|---------|--------|
+| `map_tracking.retention_days` | 90 | delete fixes older than this |
+| `map_tracking.downsample_after_hours` | 24 | start thinning past this age |
+| `map_tracking.downsample_interval_seconds` | 60 | keep one fix per interval |
+
+An hourly `ir.cron` applies both. At 50 resources pinging once a second for
+eight hours a day, that table takes ~1.4 million rows daily, so the policy is
+not optional.
+
 ## Development
 
 Specs live next to the code and are written **before** the implementation:
 
 - `map_field/specs/map_field/point-field-and-map-widget.spec.md` (`MAPF-001`)
+- `map_geo/specs/map_geo/geo-point-field.spec.md` (`MGEO-001`)
+- `map_tracking/specs/map_tracking/track-storage.spec.md` (`MTRK-001`)
 - `hr_employee_map/specs/hr_employee_map/employee-location.spec.md` (`HREM-001`)
+
+`map_field` and `map_geo` ship a field type and no access-control surface of
+their own, so both delegate their "permission denied" case to `MTRK-001-20`,
+which runs against the first model that has real ACLs.
 
 Every test cites the spec case it covers with a `# spec: MOD-XXX-NN` comment.
 
@@ -103,8 +144,10 @@ odoo-bin -d <db> -u map_field --test-enable \
 # map_geo needs a PostGIS database. The repository's compose.yml ships one
 # under the `geo` profile, on port 6001, kept separate from the main instance:
 #   docker compose --profile geo up -d postgis
-odoo-bin -d <db> --db_port=6001 -u map_geo,map_geo_test --test-enable \
-    --test-tags=/map_geo,/map_geo_test --stop-after-init
+odoo-bin -d <db> --db_port=6001 \
+    -u map_geo,map_geo_test,map_tracking,map_tracking_test --test-enable \
+    --test-tags=/map_geo,/map_geo_test,/map_tracking,/map_tracking_test \
+    --stop-after-init
 ```
 
 The Hoot suite is also browsable at `/web/tests?filter=map_field`.

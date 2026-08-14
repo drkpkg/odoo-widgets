@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Odoo 19 groups hang off res.groups.privilege, not ir.module.category
+             directly: res.groups lost its category_id field. -->
+        <record id="res_groups_privilege_map_tracking" model="res.groups.privilege">
+            <field name="name">Map Tracking</field>
+            <field name="sequence">20</field>
+            <field name="description">Access to tracked positions and devices.</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_map_tracking_user" model="res.groups">
+            <field name="name">User</field>
+            <field name="sequence">10</field>
+            <field name="privilege_id" ref="res_groups_privilege_map_tracking"/>
+            <field name="comment">Can read tracked positions and the device list.</field>
+        </record>
+
+        <record id="group_map_tracking_manager" model="res.groups">
+            <field name="name">Administrator</field>
+            <field name="sequence">20</field>
+            <field name="privilege_id" ref="res_groups_privilege_map_tracking"/>
+            <field name="implied_ids" eval="[(4, ref('group_map_tracking_user'))]"/>
+            <field name="comment">Can manage devices and their secrets.</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_map_track_point_user,map.track.point.user,model_map_track_point,map_tracking.group_map_tracking_user,1,0,0,0
+access_map_track_point_manager,map.track.point.manager,model_map_track_point,map_tracking.group_map_tracking_manager,1,0,0,1
+access_map_tracker_device_user,map.tracker.device.user,model_map_tracker_device,map_tracking.group_map_tracking_user,1,0,0,0
+access_map_tracker_device_manager,map.tracker.device.manager,model_map_tracker_device,map_tracking.group_map_tracking_manager,1,1,1,1
