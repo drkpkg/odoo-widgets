@@ -79,6 +79,14 @@ class MapTrackerDevice(models.Model):
             return False
         return hmac.compare_digest(stored, self._hash_token(token))
 
+    def _touch_seen(self):
+        """Record that we just heard from this device.
+
+        A plain write on a tiny row: one per request, not one per position.
+        """
+        self.ensure_one()
+        self.sudo().last_seen_at = fields.Datetime.now()
+
     def action_regenerate_token(self):
         """Generate a fresh secret, store its hash and show it once."""
         self.ensure_one()

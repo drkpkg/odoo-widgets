@@ -13,7 +13,7 @@ dependency direction is enforced by `depends`.
 | `map_field` | map | A `point` field type (PostgreSQL `point`) plus a `location_map` OWL widget that renders it as an interactive Leaflet map. |
 | `map_geo` | map | A `geo_point` field type on PostGIS `geometry(Point,4326)`: spatially indexable and queryable. Requires the PostGIS extension. |
 | `map_geo_test` | map | Test fixtures for `map_geo`. Not for production databases. |
-| `map_tracking` | map | Position history for anything that moves: a trackable mixin, an append-only `map.track.point` table, a device registry, and a retention cron. No UI. |
+| `map_tracking` | map | Position history for anything that moves: a trackable mixin, an append-only `map.track.point` table, a device registry, two ingestion endpoints, and a retention cron. No UI. |
 | `map_tracking_test` | map | Test fixtures for `map_tracking`. Not for production databases. |
 | `hr_employee_map` | hr | Bridge: adds `map_location` to `hr.employee`, shown in the "Personal" tab. |
 
@@ -115,6 +115,36 @@ An hourly `ir.cron` applies both. At 50 resources pinging once a second for
 eight hours a day, that table takes ~1.4 million rows daily, so the policy is
 not optional.
 
+### Ingestion endpoints
+
+Two doors, differing in transport as well as authentication — a GPS box does
+not speak JSON-RPC 2.0:
+
+| Route | Type | Auth | For |
+|-------|------|------|-----|
+| `/map_tracking/ingest` | jsonrpc | `user` | your PWA and the backend browser |
+| `/map_tracking/ingest/device` | http | device secret | third-party trackers |
+
+```bash
+curl -X POST https://odoo.example.com/map_tracking/ingest/device \
+  -H 'Content-Type: application/json' \
+  -d '{"identifier": "abc123", "token": "...",
+       "points": [{"location": "(-16.5,-68.15)",
+                   "recorded_at": "2026-03-01 08:00:00"}]}'
+```
+
+The device route takes the destination resource from the device record, never
+from the payload, so a leaked secret cannot be turned into a write primitive on
+an arbitrary record. Every authentication failure — unknown identifier, wrong
+secret, archived device — returns the same 401, so the endpoint cannot be used
+to enumerate devices.
+
+**Rate limiting belongs in your reverse proxy.** The application caps points
+per request, which is cheap and stops one request eating memory, but a
+per-device counter in the database would add a contended write per request and
+still would not stop a distributed flood. Put the real limit in nginx or
+Cloudflare, and serve this over HTTPS: the secret travels in every request.
+
 ## Development
 
 Specs live next to the code and are written **before** the implementation:
@@ -122,6 +152,7 @@ Specs live next to the code and are written **before** the implementation:
 - `map_field/specs/map_field/point-field-and-map-widget.spec.md` (`MAPF-001`)
 - `map_geo/specs/map_geo/geo-point-field.spec.md` (`MGEO-001`)
 - `map_tracking/specs/map_tracking/track-storage.spec.md` (`MTRK-001`)
+- `map_tracking/specs/map_tracking/ingestion-endpoints.spec.md` (`MTRK-002`)
 - `hr_employee_map/specs/hr_employee_map/employee-location.spec.md` (`HREM-001`)
 
 `map_field` and `map_geo` ship a field type and no access-control surface of
